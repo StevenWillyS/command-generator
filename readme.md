@@ -7,3 +7,4 @@ NameCommand.java
 NameCommandImpl.java
 NameCommandImplTest.java
 NameCommandRequest.java
+test
