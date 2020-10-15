@@ -3,6 +3,7 @@ COMMAND_DIRECTORY=""
 COMMAND_IMPL_DIRECTORY=""
 COMMAND_IMPL_TEST_DIRECTORY=""
 COMMAND_MODEL_DIRECTORY=""
+WEB_MODEL_DIRECTORY=""
 
 
 
@@ -20,6 +21,10 @@ findCommandImplTestDirectory() {
 
 findCommandModelDirectory() {
 	find ./ -name "model" | grep "command" | grep "src/"
+}
+
+findWebModelDirectory() {
+  find ./ -name "model" | grep "web" | grep "main/"
 }
 
 
@@ -78,14 +83,16 @@ importSpringframeworkService() {
 createBasicInterfaceHeader() {
 	FILENAME=$1
 	CLASSNAME=$2
-	MODEL_CLASSNAME=$3
+	MODEL_REQUEST_CLASSNAME=$3
+	WEB_RESPONSE_CLASSNAME=$4
 	
 	cat <<-EOF >> "$COMMAND_DIRECTORY/$FILENAME"
 	$(printPackage $COMMAND_DIRECTORY)
 	
-	$(importClass $COMMAND_MODEL_DIRECTORY $MODEL_CLASSNAME)
+	$(importClass $COMMAND_MODEL_DIRECTORY $MODEL_REQUEST_CLASSNAME)
+	$(importClass $WEB_MODEL_DIRECTORY $WEB_RESPONSE_CLASSNAME)
 	
-	public interface $CLASSNAME extends Command<$MODEL_CLASSNAME, Boolean> {
+	public interface $CLASSNAME extends Command<$MODEL_REQUEST_CLASSNAME, $WEB_RESPONSE_CLASSNAME> {
 	}
 	EOF
 }
@@ -111,12 +118,13 @@ createBasicImplHeader() {
 }
 
 
-createBasicRequestHeader() {
+createBasicModelHeader() {
 	FILENAME=$1
 	CLASSNAME=$2
+	DIRECTORY=$3
 
-	cat <<-EOF >> "$COMMAND_MODEL_DIRECTORY/$FILENAME"
-	$(printPackage $COMMAND_MODEL_DIRECTORY)
+	cat <<-EOF >> "$DIRECTORY/$FILENAME"
+	$(printPackage "$DIRECTORY")
 	
 	$(lombokBasicImport)
 	
@@ -148,7 +156,8 @@ createCommand() {
 	CLASSNAME="$1Command"
 	FILENAME="$CLASSNAME.$EXT"
 	REQUEST_MODEL_CLASSNAME="${CLASSNAME}Request"
-	createBasicInterfaceHeader $FILENAME $CLASSNAME $REQUEST_MODEL_CLASSNAME
+	RESPONSE_MODEL_CLASSNAME="$1WebResponse"
+	createBasicInterfaceHeader $FILENAME $CLASSNAME $REQUEST_MODEL_CLASSNAME $RESPONSE_MODEL_CLASSNAME
 }
 
 createCommandImpl() {
@@ -164,10 +173,18 @@ createCommandImplTest() {
 	createBasicClassHeader $FILENAME $CLASSNAME
 }
 
-createCommandModel() {
+createCommandModelRequest() {
 	CLASSNAME="$1CommandRequest"
 	FILENAME="$CLASSNAME.$EXT"
-	createBasicRequestHeader $FILENAME $CLASSNAME
+	DIRECTORY=$COMMAND_MODEL_DIRECTORY
+	createBasicModelHeader $FILENAME $CLASSNAME $DIRECTORY
+}
+
+createCommandModelWebResponse() {
+  CLASSNAME="$1WebResponse"
+  FILENAME="$CLASSNAME.$EXT"
+  DIRECTORY=$WEB_MODEL_DIRECTORY
+  createBasicModelHeader $FILENAME $CLASSNAME $DIRECTORY
 }
 
 
@@ -177,13 +194,15 @@ initializeDirectoryLocation() {
 	COMMAND_IMPL_DIRECTORY=$(findCommandImplDirectory)
 	COMMAND_IMPL_TEST_DIRECTORY=$(findCommandImplTestDirectory)
 	COMMAND_MODEL_DIRECTORY=$(findCommandModelDirectory)
+	WEB_MODEL_DIRECTORY=$(findWebModelDirectory)
 }
 
 createCommandBundle() {
 	createCommand $1
 	createCommandImpl $1
 	createCommandImplTest $1
-	createCommandModel $1
+	createCommandModelRequest $1
+	createCommandModelWebResponse $1
 }
 
 generateNewCommand() {
